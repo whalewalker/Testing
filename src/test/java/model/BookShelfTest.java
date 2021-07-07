@@ -30,6 +30,10 @@ class BookShelfTest {
 
     @Test
     void bookShelfContainsTwoBooksWhenTwoBooksIsAdded(){
+        bookShelf.add("Effective Java");
+        bookShelf.add("Code Complete");
 
+        List<String> books = bookShelf.books();
+        assertEquals(2, books.size(), "BookShelf should have two books.");
     }
 }
