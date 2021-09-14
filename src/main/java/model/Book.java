@@ -1,41 +1,41 @@
 package model;
 
-import java.time.LocalDate;
+import lombok.Data;
 
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Data
 public class Book implements Comparable<Book>{
     private final String title;
     private final String author;
     private final LocalDate publishedOn;
+    private LocalDate startedReadingOn;
+    private LocalDate finishedReadingOn;
+    private String id;
+
 
     public Book(String title, String author, LocalDate publishedOn) {
-        this.title = title;
+        this.title = title.toLowerCase();
         this.author = author;
         this.publishedOn = publishedOn;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public LocalDate getPublishedOn() {
-        return publishedOn;
-    }
-
-    @Override
-    public String toString() {
-        return "Book{" +
-                "title='" + title + '\'' +
-                ", author='" + author + '\'' +
-                ", publishedOn=" + publishedOn +
-                '}';
+        this.id = UUID.randomUUID().toString();
     }
 
     @Override
     public int compareTo(Book book) {
         return title.compareTo(book.title);
+    }
+
+    public void startedReadingOn(LocalDate startedOn) {
+        this.startedReadingOn = startedOn;
+    }
+
+    public void finishedReadingOn(LocalDate finishedOn) {
+        this.finishedReadingOn = finishedOn;
+    }
+
+    public boolean isRead() {
+        return startedReadingOn != null && finishedReadingOn != null;
     }
 }

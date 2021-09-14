@@ -1,6 +1,9 @@
 package model;
 
+import config.BooksParameterResolver;
+import org.assertj.core.api.Java6Assertions;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -10,23 +13,26 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-
+@DisplayName("A book shelf")
+@ExtendWith(BooksParameterResolver.class)
 class BookShelfTest {
-
     BookShelf bookShelf;
     Book effectiveJava;
     Book codeComplete;
     Book mythicalManMonth;
     Book cleanCode;
+    Book refactoring;
 
 
     @BeforeEach
-    void setUp() {
+    void setUp(Map<String, Book> books) {
         bookShelf = new BookShelf();
-        effectiveJava = new Book("Effective Java", "Joshua Bloch", LocalDate.of(2008, Month.MAY, 8));
-        codeComplete = new Book("Code Complete", "Steve McConnel", LocalDate.of(2004, Month.JUNE, 9));
-        mythicalManMonth = new Book("The Mythical Man-Month", "Frederick Phillips Brooks", LocalDate.of(1975, Month.JANUARY, 1));
-        cleanCode = new Book("The Clean Code", "Robert C. Martin", LocalDate.of(2008, Month.APRIL, 6));
+        this.effectiveJava = books.get("Effective Java");
+        this.codeComplete = books.get("Code Complete");
+        this.mythicalManMonth = books.get("The Mythical Man-Month");
+        this.cleanCode = books.get("The Clean Code");
+        this.refactoring = books.get("Refactoring");
+        bookShelf.add(effectiveJava, codeComplete, mythicalManMonth, cleanCode, refactoring);
     }
 
     @AfterEach
@@ -54,7 +60,6 @@ class BookShelfTest {
     @DisplayName("bookShelf contain two books when two books is added to it")
     void bookShelfContainsTwoBooksWhenTwoBooksIsAdded() {
         bookShelf.add(effectiveJava, codeComplete);
-
         List<Book> books = bookShelf.books();
         assertEquals(2, books.size(), "BookShelf should have two books.");
     }
@@ -72,14 +77,7 @@ class BookShelfTest {
     void booksReturnedFromBookShelfIsImmutableForClient() {
         bookShelf.add(effectiveJava, codeComplete);
         List<Book> books = bookShelf.books();
-
-        try {
-            books.add(mythicalManMonth);
-            fail("Should not be able to add book to books");
-        } catch (Exception e) {
-            assertTrue(e instanceof UnsupportedOperationException, "Should\n" +
-                    "throw UnsupportedOperationException.");
-        }
+        assertThrows(UnsupportedOperationException.class, () -> books.add(mythicalManMonth));
     }
 
     /*SECOND FEATURE
@@ -99,10 +97,10 @@ class BookShelfTest {
     @Test
     @DisplayName("books in bookshelf are in order of insertion after arrange is called")
     void booksInBookShelfAreInsertionOrderAfterCallingArrangeMethod() {
-        bookShelf.add(effectiveJava, codeComplete, mythicalManMonth);
+        bookShelf.add(codeComplete, mythicalManMonth, effectiveJava);
         bookShelf.arrange();
         List<Book> books = bookShelf.books();
-        assertEquals(Arrays.asList(effectiveJava, codeComplete, mythicalManMonth), books, "Books in bookshelf are in insertion order");
+        assertEquals(Arrays.asList(codeComplete, mythicalManMonth, effectiveJava), books, "Books in bookshelf are in insertion order");
     }
 
     @Test
@@ -118,18 +116,17 @@ class BookShelfTest {
     As a user, I should be able to group books in my bookshelf based on
         certain criteria
  */
-
     @Test
     @DisplayName("books inside bookshelf are grouped according to user provided criteria(group by year published)")
     void groupBooksInsideBookShelfByPublicationYear(){
         bookShelf.add(effectiveJava, codeComplete, mythicalManMonth, cleanCode);
 
         Map<Year, List<Book>> booksByPublishedYear = bookShelf.groupByPublicationYear();
-        assertThat(booksByPublishedYear).containsKey(Year.of(2008)).containsValues(Arrays.asList(effectiveJava, cleanCode));
+        assertThat(booksByPublishedYear).containsKey(Year.of(2008)).containsValues(List.of(effectiveJava));
 
         assertThat(booksByPublishedYear).containsKey(Year.of(2004)).containsValues(Collections.singletonList(codeComplete));
 
-        assertThat(booksByPublishedYear).containsKey(Year.of(1975)).containsValues(Collections.singletonList(mythicalManMonth));
+        assertThat(booksByPublishedYear).containsKey(Year.of(1975)).containsValues(Arrays.asList(mythicalManMonth, cleanCode));
     }
 
     @Test
@@ -140,13 +137,51 @@ class BookShelfTest {
 
         assertThat(booksByAuthor).containsKey("Joshua Bloch").containsValues(Collections.singletonList(effectiveJava));
 
-        assertThat(booksByAuthor).containsKey("Robert C. Martin").containsValues(Collections.singletonList(effectiveJava));
-
         assertThat(booksByAuthor).containsKey("Steve McConnel").containsValues(Collections.singletonList(codeComplete));
 
-        assertThat(booksByAuthor).containsKey("Frederick Phillips Brooks").containsValues(Collections.singletonList(mythicalManMonth));
+        assertThat(booksByAuthor).containsKey("Frederick Phillips Brooks").containsValues(Arrays.asList(mythicalManMonth, cleanCode));
 
     }
 
+    @Nested
+    @DisplayName("shelf book progress")
+    class BookShelfProgress {
+
+        @Test
+        @DisplayName("is 0% completed and 100% to-read when no book is read yet")
+        void progress100PercentageUnread() {
+            Progress progress = bookShelf.progress();
+            Java6Assertions.assertThat(progress.getCompleted()).isEqualTo(0);
+            Java6Assertions.assertThat(progress.getToRead()).isEqualTo(100);
+        }
+
+        @Test
+        @DisplayName("is 40% completed and 60% to-read when 2 books are finish and 3 books are yet to be read")
+        void progressWithCompletedAndToReadPercentage() {
+            effectiveJava.startedReadingOn(LocalDate.of(2016, Month.JULY, 1));
+            effectiveJava.finishedReadingOn(LocalDate.of(2016, Month.JULY, 31));
+            cleanCode.startedReadingOn(LocalDate.of(2016, Month.AUGUST, 1));
+            cleanCode.finishedReadingOn(LocalDate.of(2016, Month.AUGUST, 31));
+            Progress progress = bookShelf.progress();
+            Java6Assertions.assertThat(progress.getCompleted()).isEqualTo(40);
+            Java6Assertions.assertThat(progress.getToRead()).isEqualTo(60);
+        }
+    }
+
+    @Nested
+    @DisplayName("Search")
+    class BookShelfSearch {
+
+        @Test
+        @DisplayName("should find books with title containing text and published after specified date")
+        void shouldFindBooksWithTitleContainingText() {
+            List<Book> books = bookShelf.findBooksByTitle("Code", b -> b.getPublishedOn().isBefore(LocalDate.of(2014, Month.DECEMBER, 31)));
+            assertThat(books.size()).isEqualTo(2);
+        }
+
+
+
+    }
+    
 }
 
