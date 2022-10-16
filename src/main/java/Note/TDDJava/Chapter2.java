@@ -30,5 +30,17 @@ public class Chapter2 {
      * 1. Mockito
      * 2. EasyMock
      * 3. Power Mock
+     *
+     * -> Web Testing Frameworks
+     * 1. Selenium
+     * 2. Selenide
+     *
+     * -> Behavioural Driven Development
+     * BDD is an agile process  designed to keep the focus on stakeholder value
+     * throughout the whole project.
+     *
+     * Tools For BDD
+     * 1. JBehave -> Java BDD Framework used for writing acceptance tests that are able to be executed and automated.
+     * 2. Cucumber
      */
 }
