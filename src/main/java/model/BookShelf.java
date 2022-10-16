@@ -61,6 +61,6 @@ public class BookShelf {
     List<Book> findBooksByTitle(String title, BookFilter filter) {
         return  getBooks().stream()
                 .filter(book -> book.getTitle().contains(title.toLowerCase()))
-                .filter(book -> filter.apply(book)).collect(Collectors.toList());
+                .filter(filter::apply).collect(Collectors.toList());
     }
 }
